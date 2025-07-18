@@ -1,5 +1,6 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
@@ -62,7 +63,21 @@ class FocusModeScreen(Screen):
         )
         main_layout.add_widget(self.phase_label)
         
+        # Emergency unlock button (bottom-right corner)
+        self.emergency_button = Button(
+            text='🚨',
+            size_hint=(None, None),
+            size=(60, 60),
+            pos_hint={'right': 0.98, 'y': 0.02},
+            background_color=(0.9, 0.2, 0.2, 0.9),
+            font_size='18sp',
+            color=(1, 1, 1, 1)
+        )
+        print("Emergency unlock button created at bottom-right corner")
+        self.emergency_button.bind(on_press=self.show_unlock_screen)
+        
         self.add_widget(main_layout)
+        self.add_widget(self.emergency_button)
         
         # Update timer display
         Clock.schedule_interval(self.update_timer_display, 1.0)
@@ -131,6 +146,10 @@ class FocusModeScreen(Screen):
         """Return to home screen"""
         self.manager.current = 'home'
         
+    def show_unlock_screen(self, instance):
+        """Show unlock screen"""
+        self.manager.current = 'unlock'
+    
     def emergency_unlock(self):
         """Emergency unlock function"""
         self.timer.stop_timer()

@@ -45,6 +45,16 @@ class HomeScreen(Screen):
         )
         main_layout.add_widget(self.status_label)
         
+        # Instructions label
+        instructions_label = Label(
+            text='Emergency unlock: Tap 🔧 (bottom-left) during focus mode',
+            font_size='12sp',
+            size_hint_y=None,
+            height=40,
+            color=(0.6, 0.6, 0.6, 1)
+        )
+        main_layout.add_widget(instructions_label)
+        
         # Manual focus button
         focus_button = Button(
             text='Start 30-Min Focus Session',
@@ -66,15 +76,17 @@ class HomeScreen(Screen):
         )
         main_layout.add_widget(settings_button)
         
-        # Hidden unlock button (bottom-left)
+        # Emergency unlock button (bottom-left corner)
         unlock_button = Button(
-            text='⚙',
+            text='🔧',
             size_hint=(None, None),
-            size=(30, 30),
-            pos_hint={'x': 0, 'y': 0},
-            background_color=(0.3, 0.3, 0.3, 0.5),
-            font_size='12sp'
+            size=(60, 60),
+            pos_hint={'x': 0.02, 'y': 0.02},
+            background_color=(0.8, 0.5, 0.2, 0.9),
+            font_size='18sp',
+            color=(1, 1, 1, 1)
         )
+        print("Emergency unlock button created at bottom-left corner")
         unlock_button.bind(on_press=self.show_unlock_screen)
         
         # Add to screen
