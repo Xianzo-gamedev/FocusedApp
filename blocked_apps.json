@@ -1,0 +1,34 @@
+{
+  "blocked_apps": [
+    {
+      "name": "Instagram",
+      "package_name": "com.instagram.android",
+      "daily_limit": 30
+    },
+    {
+      "name": "Facebook",
+      "package_name": "com.facebook.katana",
+      "daily_limit": 30
+    },
+    {
+      "name": "Twitter",
+      "package_name": "com.twitter.android",
+      "daily_limit": 30
+    },
+    {
+      "name": "Discord",
+      "package_name": "com.discord",
+      "daily_limit": 30
+    }
+  ],
+  "focus_mode_settings": {
+    "black_screen_duration": 10,
+    "screen_lock_duration": 20,
+    "motivational_messages": [
+      "Your future is bright!",
+      "Stay focused, stay strong!",
+      "Great things await you!",
+      "You're building your future!"
+    ]
+  }
+}
