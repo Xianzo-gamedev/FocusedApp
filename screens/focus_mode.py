@@ -8,6 +8,7 @@ from utils.telegram_bot import telegram_bot
 import asyncio
 import json
 import random
+import threading
 
 class FocusModeScreen(Screen):
     def __init__(self, **kwargs):
@@ -88,9 +89,9 @@ class FocusModeScreen(Screen):
         
         # Send telegram notification
         if manual:
-            asyncio.create_task(telegram_bot.send_manual_focus_started())
+            self._send_telegram_notification_async("manual_focus")
         else:
-            asyncio.create_task(telegram_bot.send_focus_mode_started())
+            self._send_telegram_notification_async("focus_started")
             
     def update_timer_display(self, dt):
         """Update timer display"""
@@ -121,7 +122,7 @@ class FocusModeScreen(Screen):
         self.timer_label.text = '00:00'
         
         # Send telegram notification
-        asyncio.create_task(telegram_bot.send_focus_mode_ended())
+        self._send_telegram_notification_async("focus_ended")
         
         # Schedule return to home screen
         Clock.schedule_once(self.return_to_home, 3.0)
@@ -135,3 +136,25 @@ class FocusModeScreen(Screen):
         self.timer.stop_timer()
         self.message_label.text = 'Emergency unlock activated'
         Clock.schedule_once(self.return_to_home, 2.0)
+    
+    def _send_telegram_notification_async(self, notification_type):
+        """Send telegram notification asynchronously"""
+        def send_notification():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                if notification_type == "focus_started":
+                    loop.run_until_complete(telegram_bot.send_focus_mode_started())
+                elif notification_type == "focus_ended":
+                    loop.run_until_complete(telegram_bot.send_focus_mode_ended())
+                elif notification_type == "manual_focus":
+                    loop.run_until_complete(telegram_bot.send_manual_focus_started())
+                
+                loop.close()
+            except Exception as e:
+                print(f"Error sending telegram notification: {e}")
+        
+        # Run in separate thread to avoid blocking
+        notification_thread = threading.Thread(target=send_notification, daemon=True)
+        notification_thread.start()

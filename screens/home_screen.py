@@ -6,6 +6,7 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from utils.telegram_bot import telegram_bot
 import asyncio
+import threading
 
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
@@ -89,12 +90,30 @@ class HomeScreen(Screen):
         
     def start_manual_focus(self, instance):
         """Start manual focus mode"""
-        # Send telegram notification
-        asyncio.create_task(telegram_bot.send_manual_focus_started())
+        # Send telegram notification in separate thread
+        self._send_telegram_notification_async("manual_focus")
         
         # Switch to focus mode
         self.manager.current = 'focus_mode'
         self.manager.get_screen('focus_mode').start_focus_session(manual=True)
+    
+    def _send_telegram_notification_async(self, notification_type):
+        """Send telegram notification asynchronously"""
+        def send_notification():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                if notification_type == "manual_focus":
+                    loop.run_until_complete(telegram_bot.send_manual_focus_started())
+                
+                loop.close()
+            except Exception as e:
+                print(f"Error sending telegram notification: {e}")
+        
+        # Run in separate thread to avoid blocking
+        notification_thread = threading.Thread(target=send_notification, daemon=True)
+        notification_thread.start()
         
     def show_unlock_screen(self, instance):
         """Show unlock screen"""
