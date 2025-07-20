@@ -1,14 +1,11 @@
-# Workflow to build your Android APK for debug and pull requests
-# This workflow is separate from your release workflow (main.yml)
-
 name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]  # Triggers on push to these branches
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]  # Triggers on PRs to these branches
-  workflow_dispatch:            # Manual trigger support
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,13 +20,17 @@ jobs:
       with:
         python-version: 3.9
 
-    - name: Install system dependencies
+    - name: Install system dependencies (with libtool/autoconf fix)
       run: |
         sudo apt update
         sudo apt install -y \
           python3-dev libffi-dev libssl-dev git unzip default-jdk \
-          automake autoconf libtool
-        # Added: autoconf to fix LT_SYS_SYMBOL_USCORE macro issue
+          automake libtool autoconf pkg-config
+
+        # Prepare autoconf macros to avoid LT_SYS_SYMBOL_USCORE error
+        libtoolize --force --copy
+        aclocal
+        autoconf
 
     - name: Install Python dependencies
       run: |
