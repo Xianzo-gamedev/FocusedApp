@@ -61,4 +61,6 @@ jobs:
         # GITHUB_TOKEN is a special token provided by GitHub Actions with permissions
         # to create releases and upload assets to your repository.
         # You do NOT need to use your PERSONAL_ACCESS_TOKEN here.
+
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
