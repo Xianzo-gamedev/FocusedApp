@@ -5,64 +5,54 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ] # Triggers on pushes to main or master branches
+    branches: [ main, master ]  # Triggers on push to these branches
   pull_request:
-    branches: [ main, master ] # Triggers on pull requests targeting main or master
-  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+    branches: [ main, master ]  # Triggers on PRs to these branches
+  workflow_dispatch:            # Manual trigger support
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Uses the latest Ubuntu runner for the job
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4 # Checks out your repository code
+      uses: actions/checkout@v4
 
     - name: Set up Python 3.9
-      uses: actions/setup-python@v4 # Sets up Python 3.9 environment
+      uses: actions/setup-python@v4
       with:
         python-version: 3.9
 
     - name: Install system dependencies
-      # This step installs necessary system-level packages for building Android apps with Python.
-      # Crucially, 'automake' and 'libtool' are added here to fix the 'LT_SYS_SYMBOL_USCORE' error.
       run: |
-        sudo apt update # Updates the package list
-        sudo apt install -y python3-dev libffi-dev libssl-dev git unzip default-jdk automake libtool
-        # python3-dev: Python header files for compiling C extensions
-        # libffi-dev, libssl-dev: Common dependencies for various Python libraries
-        # git, unzip, default-jdk: Essential tools for Android build process
-        # automake, libtool: Tools required for compiling native libraries that use Autotools
-        
+        sudo apt update
+        sudo apt install -y \
+          python3-dev libffi-dev libssl-dev git unzip default-jdk \
+          automake autoconf libtool
+        # Added: autoconf to fix LT_SYS_SYMBOL_USCORE macro issue
+
     - name: Install Python dependencies
-      # Installs Python packages required for Buildozer to function.
       run: |
-        python -m pip install --upgrade pip # Upgrades pip to the latest version
-        pip install buildozer # Installs Buildozer, the tool to package Python apps for Android
-        pip install cython # Installs Cython, often used by Kivy/KivyMD for performance
+        python -m pip install --upgrade pip
+        pip install buildozer cython
 
     - name: Build Android APK
-      # This step executes Buildozer to create the Android debug APK.
       run: |
-        # Accept Android licenses (required for the first build)
-        mkdir -p ~/.android # Ensures the .android directory exists
-        echo "y" | buildozer android debug # Runs Buildozer to build a debug APK
+        mkdir -p ~/.android
+        echo "y" | buildozer android debug
       env:
-        # These environment variables point to the Android SDK location on the runner.
         ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         ANDROID_HOME: /usr/local/lib/android/sdk
 
     - name: Upload APK
-      # Uploads the generated APK as a workflow artifact, making it downloadable from the Actions tab.
-      uses: actions/upload-artifact@v4 # Using v4 as recommended to avoid deprecation warnings
+      uses: actions/upload-artifact@v4
       with:
-        name: focusapp-debug-apk # Name of the artifact
-        path: bin/*.apk # Path to the generated APK file (Buildozer puts it in the 'bin' directory)
+        name: focusapp-debug-apk
+        path: bin/*.apk
 
     - name: Upload build logs
-      # Uploads the Buildozer logs as an artifact, useful for debugging failures.
-      uses: actions/upload-artifact@v4 # Using v4 as recommended
-      if: always() # Ensures this step runs even if previous steps fail
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: build-logs # Name of the logs artifact
-        path: .buildozer/android/platform/build-*/ # Path to Buildozer's build logs
+        name: build-logs
+        path: .buildozer/android/platform/build-*/
