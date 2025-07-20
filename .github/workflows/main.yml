@@ -3,30 +3,62 @@ name: Build & Publish Release APK
 on:
   push:
     tags:
-      - '*'
+      - '*' # This pattern matches any tag push (e.g., v1.0.0, release-beta, etc.)
 
 jobs:
-  Gradle:
+  build: # Renamed job from 'Gradle' to 'build' for clarity
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: Set up JDK 11
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '11'
+
     - name: Make Gradle executable
       run: chmod +x ./gradlew
+
     - name: Build Release APK
+      # This command builds the release APK. The output path is crucial for the next step.
       run: ./gradlew assembleRelease
-    - name: Upload APK Artifact
+
+    # The 'Upload APK Artifact' step is good for creating a workflow artifact
+    # that you can download from the 'Actions' tab. It's not directly for GitHub Releases.
+    - name: Upload APK Artifact (for workflow artifacts)
       uses: actions/upload-artifact@v4
       with:
         name: release-apk
+        # This path must match where your assembleRelease command puts the APK.
+        # Common path: app/build/outputs/apk/release/app-release.apk
+        # Using a wildcard *.apk is good if the filename changes.
         path: app/build/outputs/apk/release/*.apk
-    - name: Releasing using Hub
-      uses: sangatdesai/release-apk@main
+
+    - name: Get Release Tag Name
+      id: get_tag # This ID allows us to reference its outputs later
+      run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      # GITHUB_REF is something like 'refs/tags/v1.0.0'.
+      # The shell command extracts 'v1.0.0' from it.
+
+    - name: Create GitHub Release and Upload APK
+      # This action creates or updates a GitHub Release and attaches files to it.
+      uses: softprops/action-gh-release@v2
+      # This 'if' condition ensures this step only runs if the workflow was triggered by a tag push.
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        # The 'files' input specifies the path to the APK you want to upload.
+        # This path MUST correctly point to your built APK after the 'Build Release APK' step.
+        # Ensure it matches the actual output path of your Gradle build.
+        files: app/build/outputs/apk/release/*.apk
+        # You can optionally set the name of the asset on the release page.
+        # If omitted, it uses the original filename (e.g., app-release.apk).
+        # name: "YourApp-v${{ steps.get_tag.outputs.TAG_NAME }}.apk"
+        # The 'tag_name' is automatically picked up from the triggering tag.
+        # The 'name' of the release will be the tag name by default.
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        APP_FOLDER: app
+        # GITHUB_TOKEN is a special token provided by GitHub Actions with permissions
+        # to create releases and upload assets to your repository.
+        # You do NOT need to use your PERSONAL_ACCESS_TOKEN here.
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
