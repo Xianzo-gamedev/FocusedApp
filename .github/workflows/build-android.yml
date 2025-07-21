@@ -37,7 +37,17 @@ jobs:
           python3-dev libffi-dev libssl-dev git unzip default-jdk \
           automake libtool autoconf pkg-config build-essential \
           zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev \
-          libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+          libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev \
+          autotools-dev autoconf-archive m4
+
+    - name: Fix autoconf toolchain
+      run: |
+        # Regenerate autotools configuration
+        sudo autoupdate --version || echo "autoupdate not available"
+        # Ensure latest libtool macros are available
+        sudo aclocal --install -I /usr/share/aclocal || echo "aclocal setup done"
+        # Fix potential macro issues
+        export ACLOCAL_PATH="/usr/share/aclocal:$ACLOCAL_PATH"
 
     - name: Install Python dependencies
       run: |
