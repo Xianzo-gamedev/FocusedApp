@@ -10,32 +10,48 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.11
+        cache: 'pip'
 
-    - name: Install system dependencies (with libtool/autoconf fix)
+    - name: Cache buildozer global directory
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          buildozer-${{ runner.os }}-
+
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
           python3-dev libffi-dev libssl-dev git unzip default-jdk \
-          automake libtool autoconf pkg-config
-
-        # Prepare autoconf macros to avoid LT_SYS_SYMBOL_USCORE error
-        libtoolize --force --copy
-        aclocal
-        autoconf
+          automake libtool autoconf pkg-config build-essential \
+          zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev \
+          libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
 
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install buildozer cython
+        python -m pip install --upgrade pip setuptools wheel
+        pip install buildozer cython==0.29.33
+        pip install -r requirements.txt
+
+    - name: Validate buildozer.spec
+      run: |
+        if [ ! -f buildozer.spec ]; then
+          echo "buildozer.spec not found, initializing..."
+          buildozer init
+        fi
+        buildozer android create
 
     - name: Build Android APK
       run: |
@@ -45,15 +61,25 @@ jobs:
         ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         ANDROID_HOME: /usr/local/lib/android/sdk
 
+    - name: List build artifacts
+      run: |
+        find . -name "*.apk" -type f
+        ls -la bin/ || echo "No bin directory found"
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: focusapp-debug-apk
-        path: bin/*.apk
+        path: |
+          bin/*.apk
+          .buildozer/android/platform/build-*/outputs/apk/debug/*.apk
+        if-no-files-found: warn
 
     - name: Upload build logs
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: build-logs
-        path: .buildozer/android/platform/build-*/
+        path: |
+          .buildozer/android/platform/build-*/
+          .buildozer/*.log
